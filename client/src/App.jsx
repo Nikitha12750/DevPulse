@@ -102,7 +102,8 @@ function App() {
     try {
       setIsLoading(true);
       setError("");
-      const response = await fetch(`/api/user/${trimmedUsername}`);
+      const BASE_URL = "https://devpulse-1-g5gn.onrender.com";
+      const response = await fetch(`${BASE_URL}/api/user/${trimmedUsername}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch user data.");
       setProfile(data);
@@ -130,12 +131,12 @@ function App() {
   const topProject = profile?.repos?.find(
     (repo) => repo.name === profile?.analytics?.mostPopularRepo,
   );
-  
+
   const activityOverview = (() => {
     const repos = profile?.repos || [];
     const activityScore = profile?.analytics?.activityScore || 0;
     const totalRepos = profile?.analytics?.totalRepos || 0;
-    
+
     let lastUpdateDays = "N/A";
     let updatedLast30Days = 0;
 
@@ -265,7 +266,7 @@ function App() {
                 Quantifiable metrics based on activity, consistency, code impact, and language versatility.
               </p>
             </div>
-            
+
             <div className="rounded-xl border border-gh-border bg-gh-card/40 p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:bg-gh-card hover:shadow-xl hover:shadow-purple-500/5">
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
                 <Brain className="w-6 h-6" />
@@ -290,7 +291,7 @@ function App() {
       ) : (
         // ── ANALYSIS DASHBOARD ──
         <div className="mx-auto w-full max-w-6xl px-4 pb-16 z-10 relative mt-10">
-          
+
           {/* Loading Error Overlay (if any) */}
           {error && <p className="mb-6 text-center text-sm text-gh-red">{error}</p>}
           {isLoading && (
@@ -298,7 +299,7 @@ function App() {
           )}
 
           <div className="flex flex-col gap-10">
-            
+
             {/* ── PROFILE HEADER ── */}
             <header className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -327,7 +328,7 @@ function App() {
 
             {/* ── ROW 1: DEV SCORE & PROFILE OVERVIEW ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* DEV SCORE */}
               <Card hover={true} className="p-8 shadow-sm">
                 <div className="mb-6 flex items-center gap-2">
@@ -433,7 +434,7 @@ function App() {
                 <Brain className="w-5 h-5 text-gh-muted" />
                 <h2 className="text-xs font-semibold uppercase tracking-widest text-gh-muted">AI Insights</h2>
               </div>
-              
+
               {showInsightsSpinner ? (
                 <div className="flex items-center justify-center gap-3 py-12">
                   <svg
@@ -523,7 +524,7 @@ function App() {
 
             {/* ── ROW 3: TECH STACK & ACTIVITY SUMMARY ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* TECH STACK */}
               <Card hover={true} className="p-8 shadow-sm">
                 <div className="mb-6 flex items-baseline justify-between">
@@ -540,7 +541,7 @@ function App() {
                     </button>
                   )}
                 </div>
-                
+
                 {displayedLanguages.length ? (
                   <div className="space-y-6">
                     {displayedLanguages.map(([language, percentage], idx) => (
