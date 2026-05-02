@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gh-bg: #0d1117;
+  --color-gh-card: #161b22;
+  --color-gh-card-hover: #1c2128;
+  --color-gh-border: #30363d;
+  --color-gh-heading: #c9d1d9;
+  --color-gh-text: #c9d1d9;
+  --color-gh-muted: #8b949e;
+  --color-gh-blue: #3b82f6;
+  --color-gh-blue-dark: #2563eb;
+  --color-gh-track: #21262d;
+  --color-gh-green: #22c55e;
+  --color-gh-amber: #f59e0b;
+  --color-gh-red: #f87171;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #0d1117;
+}
+
+/* Card hover lift */
+.card-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Bar grow animation */
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+
+  to {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+}
+
+.bar-grow {
+  animation: bar-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Progress bar fill animation */
+@keyframes fill-bar {
+  from {
+    width: 0%;
+  }
+}
+
+.fill-bar {
+  animation: fill-bar 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
