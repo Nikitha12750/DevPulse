@@ -9,7 +9,10 @@ const app = express();
 
 app.use(
   cors({
-    origin: env.clientOrigin,
+    origin: [
+      "http://localhost:5173",
+      "https://dev-pulse-cyan.vercel.app"
+    ],
   }),
 );
 app.use(express.json());
