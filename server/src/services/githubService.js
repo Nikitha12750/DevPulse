@@ -6,9 +6,29 @@ const githubApi = axios.create({
   baseURL: "https://api.github.com",
   headers: {
     Accept: "application/vnd.github+json",
-    ...(env.githubToken ? { Authorization: `Bearer ${env.githubToken}` } : {}),
+    ...(env.githubToken?.trim() ? { Authorization: `Bearer ${env.githubToken.trim()}` } : {}),
   },
 });
+
+const githubApiWithoutAuth = axios.create({
+  baseURL: "https://api.github.com",
+  headers: {
+    Accept: "application/vnd.github+json",
+  },
+});
+
+const requestGithub = async (path, params = {}, fallbackToPublic = true) => {
+  try {
+    return await githubApi.get(path, { params });
+  } catch (error) {
+    if (fallbackToPublic && env.githubToken?.trim() && error.response?.status === 401) {
+      console.warn("GitHub token rejected; retrying without authentication.");
+      return githubApiWithoutAuth.get(path, { params });
+    }
+
+    throw error;
+  }
+};
 
 const pickRepoFields = (repo) => ({
   name: repo.name,
@@ -110,7 +130,58 @@ const calculateLanguageDiversityScore = (repos) => {
   return roundTo(clampScore((entropy / maxEntropy) * 100));
 };
 
-const buildRepoAnalytics = (repos) => {
+export const calculateDeveloperScore = ({
+  activityScore,
+  consistencyScore,
+  impactScore,
+  languageDiversityScore,
+  followers = 0,
+  publicRepos = 0,
+}) => {
+  const followerScore = clampScore(Math.min(100, (followers / 1000) * 100));
+  const repoScore = clampScore(Math.min(100, (publicRepos / 100) * 100));
+
+  const weightedScore =
+    0.25 * activityScore +
+    0.2 * consistencyScore +
+    0.25 * impactScore +
+    0.15 * languageDiversityScore +
+    0.08 * followerScore +
+    0.07 * repoScore;
+
+  const strengthSignals = [
+    activityScore >= 70,
+    consistencyScore >= 70,
+    impactScore >= 50,
+    languageDiversityScore >= 50,
+    followers >= 100,
+    publicRepos >= 20,
+  ].filter(Boolean).length;
+
+  const bonus = strengthSignals >= 4 ? 3 : strengthSignals === 3 ? 1 : 0;
+  const penalty = strengthSignals <= 1 ? 2 : 0;
+
+  const adjustedScore = weightedScore + bonus - penalty;
+
+  const isEliteProfile =
+    followers >= 1000 &&
+    publicRepos >= 100 &&
+    impactScore >= 75 &&
+    languageDiversityScore >= 70 &&
+    activityScore >= 80 &&
+    consistencyScore >= 75;
+
+  if (isEliteProfile) {
+    return roundTo(clampScore(Math.max(adjustedScore + 8, 90)));
+  }
+
+  return roundTo(clampScore(adjustedScore));
+};
+
+const buildRepoAnalytics = (repos, profile = {}) => {
+  const followers = Number(profile.followers ?? 0);
+  const publicRepos = Number(profile.public_repos ?? 0);
+
   if (!repos.length) {
     return {
       totalRepos: 0,
@@ -123,7 +194,14 @@ const buildRepoAnalytics = (repos) => {
       activityScore: 0,
       consistencyScore: 0,
       languageDiversityScore: 0,
-      devScore: 0,
+      devScore: calculateDeveloperScore({
+        activityScore: 0,
+        consistencyScore: 0,
+        impactScore: 0,
+        languageDiversityScore: 0,
+        followers,
+        publicRepos,
+      }),
     };
   }
 
@@ -156,19 +234,14 @@ const buildRepoAnalytics = (repos) => {
   const consistencyScore = clampScore(calculateConsistencyScore(repos));
   const languageDiversityScore = clampScore(calculateLanguageDiversityScore(repos));
 
-  const flooredActivityScore = Math.max(activityScore, 20);
-  const flooredConsistencyScore = Math.max(consistencyScore, 20);
-  const baseScore = 20;
-
-  const devScore = roundTo(
-    clampScore(
-      baseScore +
-        0.25 * flooredActivityScore +
-        0.2 * flooredConsistencyScore +
-        0.3 * normalizedStars +
-        0.25 * languageDiversityScore,
-    ),
-  );
+  const devScore = calculateDeveloperScore({
+    activityScore,
+    consistencyScore,
+    impactScore: normalizedStars,
+    languageDiversityScore,
+    followers,
+    publicRepos,
+  });
 
   return {
     totalRepos: repos.length,
@@ -249,12 +322,10 @@ const computeWeeklyActivity = (repos) => {
 export const fetchGitHubUserData = async (username) => {
   try {
     const [profileResponse, reposResponse] = await Promise.all([
-      githubApi.get(`/users/${username}`),
-      githubApi.get(`/users/${username}/repos`, {
-        params: {
-          sort: "updated",
-          per_page: 100,
-        },
+      requestGithub(`/users/${username}`),
+      requestGithub(`/users/${username}/repos`, {
+        sort: "updated",
+        per_page: 100,
       }),
     ]);
 
@@ -262,7 +333,7 @@ export const fetchGitHubUserData = async (username) => {
     const repos = reposResponse.data.map(pickRepoFields);
     
     const weeklyActivity = computeWeeklyActivity(repos);
-    const analytics = buildRepoAnalytics(repos);
+    const analytics = buildRepoAnalytics(repos, profile);
     const aiInsights = await generateInsights(analytics);
     analytics.aiInsights = aiInsights;
 

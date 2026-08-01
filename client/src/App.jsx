@@ -4,9 +4,9 @@ import { Activity, Brain, Briefcase, Box, Star, Code, BarChart3, Search, GitFork
 // ─── Pure helper functions (logic unchanged) ────────────────────────────────
 
 const getScoreCategory = (score) => {
-  if (score >= 80) return "Elite";
-  if (score >= 65) return "Strong";
-  if (score >= 45) return "Average";
+  if (score >= 75) return "Elite";
+  if (score >= 55) return "Strong";
+  if (score >= 35) return "Average";
   return "Needs Improvement";
 };
 
@@ -102,7 +102,7 @@ function App() {
     try {
       setIsLoading(true);
       setError("");
-      const BASE_URL = "https://devpulse-1-g5gn.onrender.com";
+      const BASE_URL = import.meta.env.DEV ? "" : "https://devpulse-1-g5gn.onrender.com";
       const response = await fetch(`${BASE_URL}/api/user/${trimmedUsername}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch user data.");
